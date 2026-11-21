@@ -1,7 +1,7 @@
 {
   "capabilities_version": 1,
   "compiler_id": "io.github.texel.compiler",
-  "compiler_version": "0.999.2",
+  "compiler_version": "0.999.3",
   "conformance_profile": "pxl-v1",
   "language_versions": [
     1

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texel-compiler"
-version = "0.999.2"
+version = "0.999.3"
 description = "Deterministic PXL compiler implemented with the Python standard library"
 readme = "README.md"
 requires-python = ">=3.8"
