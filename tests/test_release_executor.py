@@ -19,6 +19,7 @@ class FakeGh:
         self.fail = fail
         self.assets = []
         self.history = history
+        self.invisible_reads = 0
 
     def __call__(self, args):
         self.calls.append(args)
@@ -33,7 +34,10 @@ class FakeGh:
             elif '/releases?per_page=100&page=' in endpoint:
                 page = int(endpoint.rsplit('=', 1)[1])
                 entries = [{'tag_name': 'v0.0.%d' % n} for n in range(self.history)]
-                entries += [self.release] if self.release else []
+                visible = self.release is not None and self.invisible_reads == 0
+                entries += [self.release] if visible else []
+                if self.invisible_reads:
+                    self.invisible_reads -= 1
                 if self.fail == 'duplicate-draft':
                     entries += [self.release]
                 body, status = entries[(page - 1) * 100:page * 100], 200
@@ -57,6 +61,10 @@ class FakeGh:
             self.release = None
         elif action == 'create':
             self.release = {'id': 13, 'tag_name': 'v0.2.0', 'draft': True, 'assets': []}
+            if self.fail == 'delayed-create':
+                self.invisible_reads = 2
+            elif self.fail == 'invisible-create':
+                self.invisible_reads = 20
         elif action == 'upload':
             for value in args[4:]:
                 if value == '--repo':
@@ -92,6 +100,23 @@ class ReleaseExecutorTest(unittest.TestCase):
         self.run_release(gh)
         self.assertEqual(['create', 'upload', 'edit'], gh.mutations)
         self.assertFalse(gh.release['draft'])
+
+    def test_created_draft_visibility_delay_only_retries_reads(self):
+        from unittest.mock import patch
+        gh = FakeGh(fail='delayed-create')
+        with patch('tools.release_state.time.sleep') as sleep:
+            self.run_release(gh)
+        self.assertEqual(['create', 'upload', 'edit'], gh.mutations)
+        self.assertEqual(2, sleep.call_count)
+
+    def test_created_draft_visibility_timeout_never_uploads_or_publishes(self):
+        from unittest.mock import patch
+        gh = FakeGh(fail='invisible-create')
+        with patch('tools.release_state.time.sleep') as sleep:
+            with self.assertRaisesRegex(ReleaseStateError, 'created release'):
+                self.run_release(gh)
+        self.assertEqual(['create'], gh.mutations)
+        self.assertEqual(4, sleep.call_count)
 
     def test_old_partial_draft_rebuilt_and_tag_preserved(self):
         gh = FakeGh('draft')

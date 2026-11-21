@@ -5,6 +5,7 @@ import json
 import re
 import sys
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import quote
 
@@ -231,9 +232,16 @@ def publish(repo, tag, expected_sha, directory, notes, runner=_run):
             raise ReleaseStateError("release appeared before draft creation")
         _command(runner, ["gh", "release", "create", tag, "--repo", repo,
                           "--verify-tag", "--draft", "--title", tag, "--notes-file", str(notes)])
-        observed = current()
+        # Newly created drafts can briefly be absent from the listing. Retry
+        # reads only, never creation; errors and unexpected publication still stop.
+        for attempt in range(5):
+            observed = current()
+            if observed["state"] != "missing":
+                break
+            if attempt < 4:
+                time.sleep(2)
         if observed["state"] != "draft":
-            raise ReleaseStateError("created release is not a draft")
+            raise ReleaseStateError("created release is not a visible draft")
         release_id = observed["release_id"]
 
     def upload():
