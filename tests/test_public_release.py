@@ -1,4 +1,4 @@
-"""Release-surface gates for the public Texel 0.999.4 repository."""
+"""Release-surface gates for the public Texel 0.999.5 repository."""
 
 import json
 import os
@@ -26,11 +26,11 @@ class PublicReleaseTest(unittest.TestCase):
     def test_release_metadata_is_consistent(self):
         importer = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         compiler = (ROOT / "compiler" / "python" / "pyproject.toml").read_text(encoding="utf-8")
-        self.assertRegex(importer, r'(?m)^version = "0\.999\.4"$')
-        self.assertRegex(compiler, r'(?m)^version = "0\.999\.4"$')
+        self.assertRegex(importer, r'(?m)^version = "0\.999\.5"$')
+        self.assertRegex(compiler, r'(?m)^version = "0\.999\.5"$')
         fixture = json.loads((ROOT / "spec" / "conformance" / "capabilities" /
                               "pxl-v1.json").read_text(encoding="utf-8"))
-        self.assertEqual("0.999.4", fixture["compiler_version"])
+        self.assertEqual("0.999.5", fixture["compiler_version"])
         self.assertEqual("pxl-v1", fixture["conformance_profile"])
         self.assertEqual([1], fixture["language_versions"])
         self.assertEqual(set(["1"]), set(fixture["error_code_ranges"]))
