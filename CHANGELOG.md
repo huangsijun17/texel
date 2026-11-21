@@ -5,6 +5,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## [Unreleased]
 
+## [0.999.1] - 2026-11-21
+
+### Changed
+- Fork-only immutable release rehearsal. Registry publication is disabled.
+
 ### Added
 - `expected.error_detail`: an optional negative-case file (Core §13.1, §13.2c; Extension §13.3.4)
   holding one substring per line. When present, a failing implementation must match at least one

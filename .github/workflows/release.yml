@@ -128,124 +128,95 @@ jobs:
           path: compiler/java/build/distributions/*-central.zip
           if-no-files-found: error
 
-  # PyPI 的"待发布者"(pending trusted publisher) 有一条规定：`owner / repository / workflow /
-  # environment` 这一组声明在**不同项目之间必须唯一**——同一组明文不能登记两次（实测报
-  # "A pending trusted publisher matching this configuration has already been registered
-  # for a different project name"）。两个包都从本工作流出，所以只能靠 environment 区分：
-  # 每个包一个环境，各自对应同名的 pending publisher。
   publish-pypi-importer:
-    # 真正的发布只发生在 tag 上：tag 推送，或手动触发且 dry_run == false（且当前 ref 是 tag）。
+    # Fork-only registry artifact verification; no publisher or credentials.
     if: github.ref_type == 'tag' && (github.event_name == 'push' || inputs.dry_run == false)
     needs: build
     runs-on: ubuntu-latest
     environment: pypi-importer
     permissions:
-      id-token: write
+      contents: read
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: python-distributions-importer
-          path: dist/python
-      # 发布必须可重跑：同一个版本重复上传 PyPI 会被拒（"File already exists"），
-      # 那样重跑就永远绿不了。先问 PyPI 的 JSON API（公开、不需要凭据），已发布就跳过。
-      - name: Skip when this version is already on PyPI
-        id: published
-        env:
-          PROJECT: texel-importer
-        shell: bash
-        run: |
-          wheel=$(ls dist/python/*.whl | head -1)
-          test -n "$wheel"
-          version=$(basename "$wheel" | sed -E 's/^[^-]+-([^-]+)-.*$/\1/')
-          if curl -fsS "https://pypi.org/pypi/$PROJECT/$version/json" >/dev/null 2>&1; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "$PROJECT $version 已在 PyPI 上，跳过上传"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "PyPI 上还没有 $PROJECT $version，继续上传"
-          fi
-      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
-        if: steps.published.outputs.skip != 'true'
+          path: dist/registry
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          packages-dir: dist/python/
-          skip-existing: false
+          name: release-assets
+          path: dist/release
+      - name: Verify registry artifact bytes against release assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          files = list(Path('dist/registry').iterdir())
+          assert files, 'missing registry artifact'
+          for path in files:
+              release = Path('dist/release') / path.name
+              assert hashlib.sha256(path.read_bytes()).digest() == hashlib.sha256(release.read_bytes()).digest(), path.name
+          print('Fork registry artifact verification passed')
+          PY
 
   publish-pypi-compiler:
+    # Fork-only registry artifact verification; no publisher or credentials.
     if: github.ref_type == 'tag' && (github.event_name == 'push' || inputs.dry_run == false)
     needs: build
     runs-on: ubuntu-latest
     environment: pypi-compiler
     permissions:
-      id-token: write
+      contents: read
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: python-distributions-compiler
-          path: dist/python
-      - name: Skip when this version is already on PyPI
-        id: published
-        env:
-          PROJECT: texel-compiler
-        shell: bash
-        run: |
-          wheel=$(ls dist/python/*.whl | head -1)
-          test -n "$wheel"
-          version=$(basename "$wheel" | sed -E 's/^[^-]+-([^-]+)-.*$/\1/')
-          if curl -fsS "https://pypi.org/pypi/$PROJECT/$version/json" >/dev/null 2>&1; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "$PROJECT $version 已在 PyPI 上，跳过上传"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "PyPI 上还没有 $PROJECT $version，继续上传"
-          fi
-      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
-        if: steps.published.outputs.skip != 'true'
+          path: dist/registry
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          packages-dir: dist/python/
-          skip-existing: false
+          name: release-assets
+          path: dist/release
+      - name: Verify registry artifact bytes against release assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          files = list(Path('dist/registry').iterdir())
+          assert files, 'missing registry artifact'
+          for path in files:
+              release = Path('dist/release') / path.name
+              assert hashlib.sha256(path.read_bytes()).digest() == hashlib.sha256(release.read_bytes()).digest(), path.name
+          print('Fork registry artifact verification passed')
+          PY
 
   publish-central:
-    # 真正的发布只发生在 tag 上：tag 推送，或手动触发且 dry_run == false（且当前 ref 是 tag）。
-    # 原来写的是 `inputs.dry_run != true`：tag 推送时 inputs 为空，靠 `null != true` 恰好成立，
-    # 语义靠巧合。这里改成显式判断，两个入口的行为都写死。
+    # Fork-only registry artifact verification; no publisher or credentials.
     if: github.ref_type == 'tag' && (github.event_name == 'push' || inputs.dry_run == false)
     needs: build
     runs-on: ubuntu-latest
     environment: maven-central
+    permissions:
+      contents: read
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: central-bundle
-          path: dist
-      - name: Skip when this version is already on Central
-        id: released
-        shell: bash
+          path: dist/registry
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-assets
+          path: dist/release
+      - name: Verify registry artifact bytes against release assets
         run: |
-          # 发布必须可重跑：同一个版本已经进了 Central 之后再传一次会被拒（"already exists"），
-          # 那样重跑就永远绿不了。这里先问 repo1（公开、不需要凭据），已存在就跳过上传。
-          bundle=$(find dist -name '*-central.zip' -print -quit)
-          test -n "$bundle"
-          version=$(basename "$bundle" | sed -e 's/^texel-//' -e 's/-central\.zip$//')
-          probe="https://repo1.maven.org/maven2/io/github/gt6-modern/texel-core/$version/texel-core-$version.pom"
-          if curl -fsS --head "$probe" >/dev/null 2>&1; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "io.github.gt6-modern:texel-core:$version 已在 Central 上，跳过上传"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "Central 上还没有 $version，继续上传"
-          fi
-      - name: Upload Central Portal bundle
-        if: steps.released.outputs.skip != 'true'
-        env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
-        shell: bash
-        run: |
-          bundle=$(find dist -name '*-central.zip' -print -quit)
-          test -n "$bundle"
-          curl --fail-with-body --user "$CENTRAL_USERNAME:$CENTRAL_PASSWORD" \
-            --form bundle="@$bundle" \
-            "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=texel-${GITHUB_REF_NAME}"
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          files = list(Path('dist/registry').iterdir())
+          assert files, 'missing registry artifact'
+          for path in files:
+              release = Path('dist/release') / path.name
+              assert hashlib.sha256(path.read_bytes()).digest() == hashlib.sha256(release.read_bytes()).digest(), path.name
+          print('Fork registry artifact verification passed')
+          PY
 
   github-release:
     # 真正的发布只发生在 tag 上：tag 推送，或手动触发且 dry_run == false（且当前 ref 是 tag）。

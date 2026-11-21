@@ -7,7 +7,7 @@ schema version 1 只允许 PRD 列出的七个键。手写常量字符串而不�
 
 CAPABILITIES_VERSION = 1
 COMPILER_ID = "io.github.texel.python"
-COMPILER_VERSION = "0.1.0"
+COMPILER_VERSION = "0.999.1"
 CONFORMANCE_PROFILE = "pxl-v1"
 LANGUAGE_VERSIONS = (1,)
 PNG_INPUT_PROFILE = "pxl-png"

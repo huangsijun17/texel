@@ -18,7 +18,7 @@ final class Capabilities {
         return "{\n"
                 + "  \"capabilities_version\": 1,\n"
                 + "  \"compiler_id\": \"io.github.texel.compiler\",\n"
-                + "  \"compiler_version\": \"0.1.0\",\n"
+                + "  \"compiler_version\": \"0.999.1\",\n"
                 + "  \"conformance_profile\": \"" + io.github.texel.core.PxlParser.conformanceProfile()
                 + "\",\n"
                 + "  \"language_versions\": [\n"

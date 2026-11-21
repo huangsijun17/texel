@@ -23,4 +23,4 @@ __all__ = [
     "render_document",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.999.1"
