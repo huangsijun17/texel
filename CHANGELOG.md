@@ -5,6 +5,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## [Unreleased]
 
+## [0.999.4] - 2026-11-21
+
+### Changed
+- Fork-only immutable release rehearsal. Registry publication is disabled.
+
 ## [0.999.3] - 2026-11-21
 
 ### Changed

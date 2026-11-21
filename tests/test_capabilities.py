@@ -25,7 +25,7 @@ class CapabilitiesSchemaTest(unittest.TestCase):
     def test_exact_current_profile(self):
         self.assertEqual(ALLOWED_KEYS, set(self.data))
         self.assertEqual(1, self.data["capabilities_version"])
-        self.assertEqual("0.999.3", self.data["compiler_version"])
+        self.assertEqual("0.999.4", self.data["compiler_version"])
         self.assertEqual("pxl-v1", self.data["conformance_profile"])
         self.assertEqual([1], self.data["language_versions"])
         self.assertEqual({"1": {"min": "PXL001", "max": "PXL012"}},

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texel-importer"
-version = "0.999.3"
+version = "0.999.4"
 description = "Convert PNG images to deterministic, diff-friendly PXL source files"
 readme = "README.md"
 requires-python = ">=3.8"
